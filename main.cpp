@@ -7,6 +7,7 @@
 #include "ioports.h"
 #include "pic_pit.h"
 #include "keybmouse.h"
+#include <commdlg.h>
 
 HINSTANCE hInst;
 HWND hWnd;
@@ -138,6 +139,42 @@ void render_screen(HDC hdc)
 	SetDIBitsToDevice(hdc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0, SCREEN_HEIGHT, scr, &bmi, DIB_RGB_COLORS);
 }
 
+void change_floppy_disk(int drive, HWND owner_hwnd)
+{
+	if (drive < 0 || drive >= NUM_FDD) {
+		return;
+	}
+
+	OPENFILENAMEA ofn;
+	char szFile[MAX_PATH] = { 0 };
+
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = owner_hwnd;
+	ofn.lpstrFile = szFile;
+	ofn.nMaxFile = sizeof(szFile);
+	ofn.lpstrFilter = "Floppy Disk Images (*.ima, *.img)\0*.ima;*.img\0All Files (*.*)\0*.*\0";
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	if (GetOpenFileNameA(&ofn) == TRUE)
+	{
+		if (fdd[drive] != NULL)
+		{
+			fclose(fdd[drive]);
+			fdd[drive] = NULL;
+		}
+
+		fopen_s(&fdd[drive], ofn.lpstrFile, "rb+");
+
+		char title[512];
+		sprintf_s(title, sizeof(title), "e86r - Floppy 0: %s", ofn.lpstrFile);
+		SetWindowTextA(owner_hwnd, title);
+	}
+}
 
 void loop()
 {
@@ -335,6 +372,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				if (dasm == NULL)
 					fopen_s(&dasm, DISASM_FILE_NAME, "wt");
+			}
+			else if (wParam == VK_F2)
+			{
+				change_floppy_disk(0, hWnd);
 			}
 			else if (wParam == VK_PRIOR)
 			{
