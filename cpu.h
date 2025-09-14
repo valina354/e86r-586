@@ -2,6 +2,9 @@
 #define CPU_H
 
 #include "config.h"
+#if (CPU >= 586)
+#include <map>
+#endif
 
 #if (PC)
 extern FILE *dasm;
@@ -336,6 +339,11 @@ extern int hlt;
 
 extern int a20;
 extern unsigned int a20mask;
+
+#if (CPU >= 586)
+extern unsigned __int64 tsc_counter;
+extern std::map<unsigned int, unsigned __int64> msr_registers;
+#endif
 
 void dump(unsigned int addr);
 void dump_descr(unsigned short sel);

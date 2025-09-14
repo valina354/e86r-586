@@ -14,6 +14,11 @@ selector_t *sel;
 selector_t *ssel;
 selector_t es, cs, ss, ds, fs, gs;
 
+#if (CPU >= 586)
+unsigned __int64 tsc_counter = 0;
+std::map<unsigned int, unsigned __int64> msr_registers;
+#endif
+
 unsigned int cr[8];
 unsigned int dr[8];
 unsigned int tr[8];
@@ -290,6 +295,10 @@ void check_irqs()
 
 void step()
 {
+#if (CPU >= 586)
+	tsc_counter++;
+#endif
+
 	if (hlt && (irqs == 0))
 		return;
 	hlt = 0;

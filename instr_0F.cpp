@@ -419,7 +419,13 @@ void f_30()
 
 void f_31()
 {
+#if (CPU >= 586)
+	D("rdtsc");
+	r.eax = (unsigned int)(tsc_counter);
+	r.edx = (unsigned int)(tsc_counter >> 32);
+#else
 	undefined(0x31);
+#endif
 }
 
 void f_32()
@@ -1103,30 +1109,47 @@ void f_A1()
 void f_A2()
 {
 	// CPUID
+#if (CPU >= 586)
 	D("cpuid");
 	switch (r.eax)
 	{
-		case 0:
-			r.eax = 1;
-			r.ebx = 'G' | ('e' << 8u) | ('n' << 16u) | ('u' << 24u); 
-			r.edx = 'i' | ('n' << 8u) | ('e' << 16u) | ('I' << 24u); 
-			r.ecx = 'n' | ('t' << 8u) | ('e' << 16u) | ('l' << 24u); 
-
-			r.ebx = 'A' | ('u' << 8u) | ('t' << 16u) | ('h' << 24u); 
-			r.edx = 'e' | ('n' << 8u) | ('t' << 16u) | ('i' << 24u); 
-			r.ecx = 'c' | ('A' << 8u) | ('M' << 16u) | ('D' << 24u); 
-
-			break;
-		case 1:
-			r.eax = 0x402;
-			r.ebx = 0;
-			r.ecx = 0;
-			r.edx = 0x00000000;
-			break;
-		default:
-			r.eax = r.ebx = r.ecx = r.edx = 0;
-			break;
+	case 0:
+		r.eax = 1;
+		r.ebx = 0x756e6547;
+		r.edx = 0x49656e69;
+		r.ecx = 0x6c65746e;
+		break;
+	case 1:
+		r.eax = 0x521;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = (1 << 0) | (1 << 4) | (1 << 8);
+		break;
+	default:
+		r.eax = r.ebx = r.ecx = r.edx = 0;
+		break;
 	}
+#else
+	D("cpuid");
+	switch (r.eax)
+	{
+	case 0:
+		r.eax = 1;
+		r.ebx = 0x756e6547;
+		r.edx = 0x49656e69;
+		r.ecx = 0x6c65746e;
+		break;
+	case 1:
+		r.eax = 0x483;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = (1 << 0);
+		break;
+	default:
+		r.eax = r.ebx = r.ecx = r.edx = 0;
+		break;
+	}
+#endif
 }
 
 void f_A3()

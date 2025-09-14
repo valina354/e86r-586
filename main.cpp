@@ -178,12 +178,12 @@ void loop()
 	// Disk setup
 	disk_init();
 
-	fdd[0] = fopen("i:\\linuxfd.img", "rb+");
+	fdd[0] = fopen("hwinfo.IMA", "rb+");
 	disk_set_fdd(0, 80, 2, 18);
 
 	
-	hdd[0] = fopen("c:\\hd500-3.img", "rb+");
-	disk_set_hdd(0, 1023, 16, 63);
+	hdd[0] = fopen("hd0.img", "rb+");
+	disk_set_hdd(0, 104, 16, 63);
 	
 	
 	/*

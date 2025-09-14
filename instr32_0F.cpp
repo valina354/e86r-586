@@ -453,17 +453,44 @@ void f32_2F()
 
 void f32_30()
 {
+#if (CPU >= 586)
+	D("wrmsr");
+	if (cpl != 0) {
+		ex(EX_GP, 0);
+		return;
+	}
+	unsigned __int64 value_to_write = ((unsigned __int64)r.edx << 32) | r.eax;
+	msr_registers[r.ecx] = value_to_write;
+#else
 	undefined32(0x30);
+#endif
 }
 
 void f32_31()
 {
+#if (CPU >= 586)
+	D("rdtsc");
+	r.eax = (unsigned int)(tsc_counter);
+	r.edx = (unsigned int)(tsc_counter >> 32);
+#else
 	undefined32(0x31);
+#endif
 }
 
 void f32_32()
 {
+#if (CPU >= 586)
+	D("rdmsr");
+	if (cpl != 0) {
+		ex(EX_GP, 0);
+		return;
+	}
+	unsigned __int64 value_to_read = msr_registers[r.ecx];
+	r.eax = (unsigned int)(value_to_read);
+	r.edx = (unsigned int)(value_to_read >> 32);
+#else
 	undefined32(0x32);
+#endif
 }
 
 void f32_33()
@@ -1144,30 +1171,47 @@ void f32_A1()
 void f32_A2()
 {
 	// CPUID
+#if (CPU >= 586)
 	D("cpuid");
 	switch (r.eax)
 	{
-		case 0:
-			r.eax = 1;
-			r.ebx = 'G' | ('e' << 8u) | ('n' << 16u) | ('u' << 24u); 
-			r.edx = 'i' | ('n' << 8u) | ('e' << 16u) | ('I' << 24u); 
-			r.ecx = 'n' | ('t' << 8u) | ('e' << 16u) | ('l' << 24u); 
-
-			r.ebx = 'A' | ('u' << 8u) | ('t' << 16u) | ('h' << 24u); 
-			r.edx = 'e' | ('n' << 8u) | ('t' << 16u) | ('i' << 24u); 
-			r.ecx = 'c' | ('A' << 8u) | ('M' << 16u) | ('D' << 24u); 
-
-			break;
-		case 1:
-			r.eax = 0x402;
-			r.ebx = 0;
-			r.ecx = 0;
-			r.edx = 0x00000000;
-			break;
-		default:
-			r.eax = r.ebx = r.ecx = r.edx = 0;
-			break;
+	case 0:
+		r.eax = 1;
+		r.ebx = 0x756e6547;
+		r.edx = 0x49656e69;
+		r.ecx = 0x6c65746e;
+		break;
+	case 1:
+		r.eax = 0x521;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = (1 << 0) | (1 << 4) | (1 << 8);
+		break;
+	default:
+		r.eax = r.ebx = r.ecx = r.edx = 0;
+		break;
 	}
+#else
+	D("cpuid");
+	switch (r.eax)
+	{
+	case 0:
+		r.eax = 1;
+		r.ebx = 0x756e6547;
+		r.edx = 0x49656e69;
+		r.ecx = 0x6c65746e;
+		break;
+	case 1:
+		r.eax = 0x483;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = (1 << 0);
+		break;
+	default:
+		r.eax = r.ebx = r.ecx = r.edx = 0;
+		break;
+	}
+#endif
 }
 
 void f32_A3()
@@ -1256,7 +1300,12 @@ void f32_A9()
 
 void f32_AA()
 {
+#if (CPU >= 586)
+	D("rsm");
+	ex(EX_OPCODE, 0);
+#else
 	undefined32(0xAA);
+#endif
 }
 
 void f32_AB()
@@ -1650,7 +1699,40 @@ void f32_C6()
 
 void f32_C7()
 {
+#if (CPU >= 586)
+	if (!mod(0))
+		return;
+
+	if (((modrm >> 3) & 7) == 1)
+	{
+		D("cmpxchg8b ");
+		disasm_mod();
+
+		unsigned int mem_low, mem_high;
+
+		if (!read32(sel, ofs, &mem_low)) return;
+		if (!read32(sel, ofs + 4, &mem_high)) return;
+
+		if (r.eax == mem_low && r.edx == mem_high)
+		{
+			r.eflags |= F_Z;
+			if (!write32(sel, ofs, r.ebx)) return;
+			if (!write32(sel, ofs + 4, r.ecx)) return;
+		}
+		else
+		{
+			r.eflags &= ~F_Z;
+			r.eax = mem_low;
+			r.edx = mem_high;
+		}
+	}
+	else
+	{
+		undefined32(0xC7);
+	}
+#else
 	undefined32(0xC7);
+#endif
 }
 
 void f32_C8()
