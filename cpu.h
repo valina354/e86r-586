@@ -5,6 +5,9 @@
 #if (CPU >= 586)
 #include <map>
 #endif
+#if (ENABLE_FPU == 1)
+#include "fpu.h"
+#endif
 
 #if (PC)
 extern FILE *dasm;

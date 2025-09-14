@@ -1124,6 +1124,9 @@ void f_A2()
 		r.ebx = 0;
 		r.ecx = 0;
 		r.edx = (1 << 0) | (1 << 4) | (1 << 8);
+#if (ENABLE_FPU == 1)
+		r.edx |= (1 << 0);
+#endif
 		break;
 	default:
 		r.eax = r.ebx = r.ecx = r.edx = 0;
@@ -1143,7 +1146,11 @@ void f_A2()
 		r.eax = 0x483;
 		r.ebx = 0;
 		r.ecx = 0;
+#if (ENABLE_FPU == 1)
 		r.edx = (1 << 0);
+#else
+		r.edx = 0;
+#endif
 		break;
 	default:
 		r.eax = r.ebx = r.ecx = r.edx = 0;

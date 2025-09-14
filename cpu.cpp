@@ -84,7 +84,9 @@ void set_flags(unsigned int value, unsigned int mask)
 {
 	// value &= F_ALL|F_IOPL;
 
+#if (CPU < 486)
 	value &= ~(F_AC | F_ID);
+#endif
 
 #if (CPU == 286)
 	if (!(cr[0] & 1))
@@ -215,6 +217,10 @@ void reset()
 	int i;
 	for (i = 0; i < 8; i++)
 		cr[i] = 0;
+
+#if (ENABLE_FPU == 1)
+ 	fpu_init();
+#endif
 
 	gdt_base = 0;
 	gdt_limit = 0xFFFFu;
@@ -379,5 +385,7 @@ extern HWND hWnd;
 
 void undefined_instr()
 {
-	shutdown();
+	D("\n!!! Undefined Instruction: Opcode=0x%.2X at %.4X:%.8X !!!\n",
+		opcode, cs.value, instr_eip);
+	ex(EX_OPCODE, 0);
 }

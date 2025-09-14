@@ -12,7 +12,7 @@
 #define CPU						586
 
 // Set to 1 to enable FPU detection
-#define ENABLE_FPU				0
+#define ENABLE_FPU				1
 
 
 // Set to 1 to enable debugging

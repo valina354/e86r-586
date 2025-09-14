@@ -10,6 +10,9 @@
 #include "instr_0F.h"
 #include "instr32_0F.h"
 #include "disk.h"
+#if (ENABLE_FPU == 1)
+#include "fpu.h"
+#endif
 
 extern void (*instrs[256])();
 int repne = 0;
@@ -3104,11 +3107,13 @@ void i_9A()
 void i_9B()
 {
 	D("wait");
-	if (((cr[0] & (CR0_MP | CR0_TS)) == (CR0_MP | CR0_TS)) && (idt_limit > 0))
-	{
+#if (ENABLE_FPU == 1)
+	fpu_wait();
+#else
+	if (((cr[0] & (CR0_MP | CR0_TS)) == (CR0_MP | CR0_TS))) {
 		ex(EX_COPROCESSOR_NA);
-		return;
 	}
+#endif
 }
 
 void i_9C()
@@ -4641,103 +4646,76 @@ void i_D7()
 	r.al = b;
 }
 
-void i_D8()
-{
+void i_D8() {
 	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
-}
-
-void i_D9()
-{
-	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
-}
-
-void i_DA()
-{
-	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
-}
-
-void i_DB()
-{
-	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
 #if (ENABLE_FPU == 1)
-	r.al = 0;
+	fpu_op(0xD8);
 #endif
-	mod(0);
 }
 
-void i_DC()
-{
+void i_D9() {
 	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xD9);
+#endif
 }
 
-void i_DD()
-{
+void i_DA() {
 	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDA);
+#endif
 }
 
-void i_DE()
-{
+void i_DB() {
 	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDB);
+#endif
 }
 
-void i_DF()
-{
+void i_DC() {
 	D("math");
-	num_math++;
-	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
-	{
-		ex(EX_COPROCESSOR_NA);
-		return;
-	}
-	mod(0);
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDC);
+#endif
+}
+
+void i_DD() {
+	D("math");
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDD);
+#endif
+}
+
+void i_DE() {
+	D("math");
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDE);
+#endif
+}
+
+void i_DF() {
+	D("math");
+	if (cr[0] & (CR0_EM | CR0_TS)) { ex(EX_COPROCESSOR_NA); return; }
+	if (!mod(0)) return;
+#if (ENABLE_FPU == 1)
+	fpu_op(0xDF);
+#endif
 }
 
 void i_E0()

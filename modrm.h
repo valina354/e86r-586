@@ -7,6 +7,7 @@ extern int modrm_byte;
 extern int modd;
 extern int sib_modd;
 extern int mod_vga;
+extern int modrm_isreg;
 
 unsigned int sib_ea();
 
