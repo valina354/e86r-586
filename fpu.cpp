@@ -189,7 +189,7 @@ static long double fpu_mul(long double x, long double y) {
 	}
 	return NAN;
 }
-#if (CPU >= 586)
+#if (CPU == 586)
 static bool IsFdivBugTriggered(double dividend) {
 	int exp;
 	double mant = frexp(dividend, &exp);
@@ -207,6 +207,41 @@ static bool IsFdivBugTriggered(double dividend) {
 	return false;
 }
 #endif
+#if (CPU >= 686)
+static bool handle_fist_bug(double val, int size_bits) {
+	if (CPU != 686) {
+		return false;
+	}
+
+	unsigned int rounding_mode = (fpu.cw & kFpuCwRc) >> 10;
+	if (rounding_mode == 1) {
+		return false;
+	}
+
+	bool overflow = false;
+	if (size_bits == 16) {
+		if (val < -32768.0) overflow = true;
+	}
+	else {
+		if (val < -2147483648.0) overflow = true;
+	}
+
+	if (!overflow) {
+		return false;
+	}
+
+	if (size_bits == 16) {
+		fpu_set_mem_short(0x8000);
+	}
+	else {
+		fpu_set_mem_int(0x80000000);
+	}
+
+	fpu.sw |= kFpuSwPe;
+
+	return true;
+}
+#endif
 static double fpu_div(double x, double y) {
 	if (isunordered(x, y)) return NAN;
 	if (y == 0.0) {
@@ -218,7 +253,7 @@ static double fpu_div(double x, double y) {
 		return copysign(INFINITY, x);
 	}
 
-#if (CPU >= 586)
+#if (CPU == 586)
 	if ((r.r32[0] & 0xFFF) == 0x521) {
 		if (IsFdivBugTriggered(x)) {
 			double buggy_x = x - 1.5e-10 * x;
@@ -375,8 +410,21 @@ void fpu_op(unsigned char opcode) {
 	case DISP(2, 1, 7): SET_ST0(fpu_div(fpu_get_mem_int(), ST0())); break;
 	case DISP(3, 1, 0): fpu_push(fpu_get_mem_int()); break;
 	case DISP(3, 1, 1): fpu_set_mem_int(trunc(fpu_pop())); break;
-	case DISP(3, 1, 2): fpu_set_mem_int(fpu_round(ST0())); break;
-	case DISP(3, 1, 3): fpu_set_mem_int(fpu_round(fpu_pop())); break;
+	case DISP(3, 1, 2):
+#if (CPU >= 686)
+		if (handle_fist_bug(ST0(), 32)) break;
+#endif
+		fpu_set_mem_int(fpu_round(ST0()));
+		break;
+	case DISP(3, 1, 3):
+#if (CPU >= 686)
+		if (handle_fist_bug(ST0(), 32)) {
+			fpu_pop();
+			break;
+		}
+#endif
+		fpu_set_mem_int(fpu_round(fpu_pop()));
+		break;
 	case DISP(3, 1, 5): fpu_push(fpu_get_mem_ldbl()); break;
 	case DISP(3, 1, 7): fpu_set_mem_ldbl(fpu_pop()); break;
 	case DISP(4, 1, 0): SET_ST0(fpu_add(ST0(), fpu_get_mem_double())); break;
@@ -423,8 +471,21 @@ void fpu_op(unsigned char opcode) {
 	case DISP(6, 0, 7): SET_ST_RM_POP(fpu_div(ST_RM(), ST0())); break;
 	case DISP(7, 1, 0): fpu_push(fpu_get_mem_short()); break;
 	case DISP(7, 1, 1): fpu_set_mem_short(trunc(fpu_pop())); break;
-	case DISP(7, 1, 2): fpu_set_mem_short(fpu_round(ST0())); break;
-	case DISP(7, 1, 3): fpu_set_mem_short(fpu_round(fpu_pop())); break;
+	case DISP(7, 1, 2):
+#if (CPU >= 686)
+		if (handle_fist_bug(ST0(), 16)) break;
+#endif
+		fpu_set_mem_short(fpu_round(ST0()));
+		break;
+	case DISP(7, 1, 3):
+#if (CPU >= 686)
+		if (handle_fist_bug(ST0(), 16)) {
+			fpu_pop();
+			break;
+		}
+#endif
+		fpu_set_mem_short(fpu_round(fpu_pop()));
+		break;
 	case DISP(7, 1, 5): fpu_push(fpu_get_mem_long()); break;
 	case DISP(7, 1, 7): fpu_set_mem_long(fpu_round(fpu_pop())); break;
 	case DISP(7, 0, 4): r.ax &= 0xFF00; r.ax |= fpu.sw & 0xFF; break;

@@ -20,7 +20,8 @@ unsigned char portread8(unsigned short port)
 		return vga_portread(port);
 
 	// IDE HDD
-	if (((port >= 0x1F0) && (port <= 0x1F7)) || ((port >= 0x3F0) && (port <= 0x3F7)))
+	if (((port >= 0x1F0) && (port <= 0x1F7)) || ((port >= 0x3F0) && (port <= 0x3F7)) ||
+		((port >= 0x170) && (port <= 0x177)) || ((port >= 0x370) && (port <= 0x377)))
 		return ide_read(port);
 
 	if (port >= 1024)
@@ -96,7 +97,8 @@ void portwrite8(unsigned short port, unsigned char v)
 		vga_portwrite(port, v);
 		return;
 	}
-	if (((port >= 0x1F0) && (port <= 0x1F7)) || ((port >= 0x3F0) && (port <= 0x3F7)))
+	if (((port >= 0x1F0) && (port <= 0x1F7)) || ((port >= 0x3F0) && (port <= 0x3F7)) ||
+		((port >= 0x170) && (port <= 0x177)) || ((port >= 0x370) && (port <= 0x377)))
 	{
 		ide_write(port, v);
 		return;

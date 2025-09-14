@@ -57,6 +57,8 @@ typedef struct
 	int have_data;
 	int irq;
 	int irq_enabled;
+	bool busy;
+	int command_timer;
 	
 	unsigned char buffer[512];
 } hdd_t;
@@ -117,6 +119,7 @@ typedef struct
 
 
 void disk_init();
+void ide_timer_tick();
 int disk_set_fdd(int drive, int cyls, int heads, int sectors);
 int disk_set_hdd(int drive, int cyls, int heads, int sectors);
 void disk_deinit();

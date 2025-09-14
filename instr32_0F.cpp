@@ -9,6 +9,9 @@
 #if (ENABLE_MMX == 1)
 #include "mmx.h"
 #endif
+#if (CPU >= 686)
+#include "alu.h"
+#endif
 
 extern unsigned char opcode_0F;
 
@@ -23,6 +26,40 @@ void undefined32(int n)
 	undefined_instr();
 	D("\tcode32: %.2X\n", n);
 }
+
+#if (CPU >= 686)
+void f32_4x_cmov() {
+    bool condition = false;
+    switch (opcode_0F & 0x0F) {
+        case 0x0: condition = (r.eflags & F_O); break;
+        case 0x1: condition = !(r.eflags & F_O); break;
+        case 0x2: condition = (r.eflags & F_C); break;
+        case 0x3: condition = !(r.eflags & F_C); break;
+        case 0x4: condition = (r.eflags & F_Z); break;
+        case 0x5: condition = !(r.eflags & F_Z); break;
+        case 0x6: condition = (r.eflags & (F_C | F_Z)); break;
+        case 0x7: condition = !(r.eflags & (F_C | F_Z)); break;
+        case 0x8: condition = (r.eflags & F_S); break;
+        case 0x9: condition = !(r.eflags & F_S); break;
+        case 0xA: condition = (r.eflags & F_P); break;
+        case 0xB: condition = !(r.eflags & F_P); break;
+        case 0xC: condition = ((r.eflags & F_S) != 0) != ((r.eflags & F_O) != 0); break;
+        case 0xD: condition = ((r.eflags & F_S) != 0) == ((r.eflags & F_O) != 0); break;
+        case 0xE: condition = (r.eflags & F_Z) || (((r.eflags & F_S) != 0) != ((r.eflags & F_O) != 0)); break;
+        case 0xF: condition = !(r.eflags & F_Z) && (((r.eflags & F_S) != 0) == ((r.eflags & F_O) != 0)); break;
+    }
+    if (!mod(0)) return;
+    D("cmovXX ");
+    disasm_modreg();
+    D(", ");
+    disasm_mod();
+    if (condition) {
+        unsigned int src_val;
+        if (!readmod(&src_val)) return;
+        writemodreg(src_val);
+    }
+}
+#endif
 
 void f32_00()
 {
@@ -304,10 +341,19 @@ void f32_1E()
 	undefined32(0x1E);
 }
 
+#if (CPU >= 686)
+void f32_1F()
+{
+	D("nop ");
+	if (!mod(0)) return;
+	disasm_mod();
+}
+#else
 void f32_1F()
 {
 	undefined32(0x1F);
 }
+#endif
 
 void f32_20()
 {
@@ -504,7 +550,13 @@ void f32_32()
 
 void f32_33()
 {
+#if (CPU >= 686)
+	D("rdpmc");
+	r.eax = 0;
+	r.edx = 0;
+#else
 	undefined32(0x33);
+#endif
 }
 
 void f32_34()
@@ -1185,7 +1237,6 @@ void f32_A1()
 void f32_A2()
 {
 	// CPUID
-#if (CPU >= 586)
 	D("cpuid");
 	switch (r.eax)
 	{
@@ -1196,10 +1247,22 @@ void f32_A2()
 		r.ecx = 0x6c65746e;
 		break;
 	case 1:
+#if (CPU >= 686)
+		r.eax = 0x619;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = (1 << 4) | (1 << 8) | (1 << 15);
+#elif (CPU >= 586)
 		r.eax = 0x521;
 		r.ebx = 0;
 		r.ecx = 0;
-		r.edx = (1 << 0) | (1 << 4) | (1 << 8);
+		r.edx = (1 << 4) | (1 << 8);
+#else
+		r.eax = 0x483;
+		r.ebx = 0;
+		r.ecx = 0;
+		r.edx = 0;
+#endif
 #if (ENABLE_FPU == 1)
 		r.edx |= (1 << 0);
 #endif
@@ -1211,31 +1274,6 @@ void f32_A2()
 		r.eax = r.ebx = r.ecx = r.edx = 0;
 		break;
 	}
-#else
-	D("cpuid");
-	switch (r.eax)
-	{
-	case 0:
-		r.eax = 1;
-		r.ebx = 0x756e6547;
-		r.edx = 0x49656e69;
-		r.ecx = 0x6c65746e;
-		break;
-	case 1:
-		r.eax = 0x483;
-		r.ebx = 0;
-		r.ecx = 0;
-#if (ENABLE_FPU == 1)
-		r.edx = (1 << 0);
-#else
-		r.edx = 0;
-#endif
-		break;
-	default:
-		r.eax = r.ebx = r.ecx = r.edx = 0;
-		break;
-	}
-#endif
 }
 
 void f32_A3()
@@ -1727,6 +1765,7 @@ void f32_C7()
 	if (!mod(0))
 		return;
 
+#if (CPU == 586)
 	if (lock_prefix_active && modrm_isreg) {
 		D("\n!!! F00F BUG TRIGGERED - CPU HALT !!!\n");
 		while (1) {
@@ -1735,6 +1774,12 @@ void f32_C7()
 #endif
 		}
 	}
+#else
+	if (lock_prefix_active && modrm_isreg) {
+		ex(EX_OPCODE, -1);
+		return;
+	}
+#endif
 
 	if (((modrm >> 3) & 7) == 1)
 	{
@@ -2053,8 +2098,13 @@ void (*instrs32_0F[256])() = {
 	&f32_10, &f32_11, &f32_12, &f32_13, &f32_14, &f32_15, &f32_16, &f32_17, &f32_18, &f32_19, &f32_1A, &f32_1B, &f32_1C, &f32_1D, &f32_1E, &f32_1F,
 	&f32_20, &f32_21, &f32_22, &f32_23, &f32_24, &f32_25, &f32_26, &f32_27, &f32_28, &f32_29, &f32_2A, &f32_2B, &f32_2C, &f32_2D, &f32_2E, &f32_2F,
 	&f32_30, &f32_31, &f32_32, &f32_33, &f32_34, &f32_35, &f32_36, &f32_37, &f32_38, &f32_39, &f32_3A, &f32_3B, &f32_3C, &f32_3D, &f32_3E, &f32_3F,
-	&f32_40, &f32_41, &f32_42, &f32_43, &f32_44, &f32_45, &f32_46, &f32_47, &f32_48, &f32_49, &f32_4A, &f32_4B, &f32_4C, &f32_4D, &f32_4E, &f32_4F,
-	&f32_50, &f32_51, &f32_52, &f32_53, &f32_54, &f32_55, &f32_56, &f32_57, &f32_58, &f32_59, &f32_5A, &f32_5B, &f32_5C, &f32_5D, &f32_5E, &f32_5F,
+#if (CPU >= 686)
+	& f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov,
+	&f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov, &f32_4x_cmov,
+#else
+	& f32_40, &f32_41, &f32_42, &f32_43, &f32_44, &f32_45, &f32_46, &f32_47, &f32_48, &f32_49, &f32_4A, &f32_4B, &f32_4C, &f32_4D, &f32_4E, &f32_4F,
+#endif
+	& f32_50, &f32_51, &f32_52, &f32_53, &f32_54, &f32_55, &f32_56, &f32_57, &f32_58, &f32_59, &f32_5A, &f32_5B, &f32_5C, &f32_5D, &f32_5E, &f32_5F,
 #if (ENABLE_MMX == 1)
 	& f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX,
 	&f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX, &f32_MMX,

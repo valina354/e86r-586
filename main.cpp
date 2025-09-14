@@ -271,6 +271,8 @@ void loop()
 
 			pit_step();
 
+			ide_timer_tick();
+
 			if ((i & 0x3F) == 0)
 			{
 				check_mouse();

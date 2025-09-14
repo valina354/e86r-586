@@ -8,8 +8,8 @@
 // System RAM size
 #define RAM_SIZE				16777216u
 
-// CPU type: 86 / 286 / 386 / 486 / 586
-#define CPU						586
+// CPU type: 86 / 286 / 386 / 486 / 586 / 686
+#define CPU						686
 
 // Set to 1 to enable FPU detection
 #define ENABLE_FPU				1

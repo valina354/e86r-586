@@ -294,6 +294,8 @@ void ide_irq(int drive)
 	if (drive >= NUM_HDD)
 		return;
 
+	hdd[drive].busy = false;
+
 	if (hdd[drive & ~1].irq_enabled)
 		irq(drive >= 2 ? 15 : 14);
 }
@@ -369,30 +371,33 @@ void ide_write(int port, unsigned char value)
 		case 0x1F7:
 			d->have_data = 0;
 			ch->error = 0;
+			ch->busy = true;
 			lba = (d->cyl * ch->heads + d->head) * ch->sectors + d->sector - 1;
 			d->cmd = value;
 			switch (value)
 			{
 				case HDD_CMD_RESTORE:
 				case HDD_CMD_SEEK:
-					ide_irq(drive);
+					ch->command_timer = 100;
 					break;
 				case HDD_CMD_INIT:
+					ch->busy = false;
 					break;
 				case HDD_CMD_READ:
 					ch->lba = lba;
 					hw_read_hdd(drive, ch->buffer, ch->lba, 1);
 					ch->pos = 0;
 					ch->have_data = d->numsectors * 512;
-					ide_irq(drive);
+					ch->command_timer = 100;
 					break;
 				case HDD_CMD_WRITE:
 					ch->lba = lba;
 					ch->pos = 0;
 					ch->have_data = d->numsectors * 512;
+					ch->command_timer = 100;
 					break;
 				case HDD_CMD_SPECIFY:
-					ide_irq(drive);
+					ch->command_timer = 100;
 					break;
 				case HDD_CMD_IDENTIFY:
 					memset(ch->buffer, 0, 512);
@@ -414,7 +419,7 @@ void ide_write(int port, unsigned char value)
 					d->numsectors = 1;
 					ch->have_data = d->numsectors * 512;
 
-					ide_irq(drive);
+					ch->command_timer = 100;
 					break;
 				default:
 					break;
@@ -511,7 +516,15 @@ unsigned char ide_read(int port)
 		case 0x1F7:
 			irqs &= ~((1 << 15) | (1 << 14));
 			d->irq = 0;
-			r = ((d->have_data) ? 0x08 : 0) | 0x50;
+			if (d->busy) {
+				r = HDD_STATUS_BUSY | HDD_STATUS_SEEK;
+			}
+			else {
+				r = HDD_STATUS_READY | HDD_STATUS_SEEK;
+				if (d->have_data) {
+					r |= HDD_STATUS_DRQ;
+				}
+			}
 			break;
 		case 0x3F6:
 			r = ((d->have_data) ? 0x08 : 0) | 0x50;
@@ -523,4 +536,19 @@ unsigned char ide_read(int port)
 
 	last_0 = (port & 7) == 0;
 	return r;
+}
+
+void ide_timer_tick()
+{
+	for (int i = 0; i < NUM_HDD; ++i)
+	{
+		if (hdd[i].command_timer > 0)
+		{
+			hdd[i].command_timer--;
+			if (hdd[i].command_timer == 0)
+			{
+				ide_irq(i);
+			}
+		}
+	}
 }
