@@ -451,3 +451,14 @@ void fpu_wait() {
 		ex(EX_COPROCESSOR);
 	}
 }
+
+#if (ENABLE_MMX == 1)
+void fpu_enter_mmx_mode() {
+	in_mmx_mode = true;
+}
+
+void emms() {
+	fpu.tw = 0xFFFF;
+	in_mmx_mode = false;
+}
+#endif

@@ -14,6 +14,9 @@
 // Set to 1 to enable FPU detection
 #define ENABLE_FPU				1
 
+// Set to 1 to enable MMX detection and instructions
+#define ENABLE_MMX				1
+
 
 // Set to 1 to enable debugging
 #define DEBUG					1

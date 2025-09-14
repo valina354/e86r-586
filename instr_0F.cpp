@@ -8,8 +8,17 @@
 #include "stringops.h"
 #include "ioports.h"
 #include "x86.h"
+#if (ENABLE_MMX == 1)
+#include "mmx.h"
+#endif
 
 unsigned char opcode_0F;
+
+#if (ENABLE_MMX == 1)
+void f_MMX() {
+	mmx_op(opcode_0F);
+}
+#endif
 
 void undefined(int n)
 {
@@ -775,7 +784,12 @@ void f_76()
 
 void f_77()
 {
+#if (ENABLE_MMX == 1)
+	D("emms");
+	emms();
+#else
 	undefined(0x77);
+#endif
 }
 
 void f_78()
@@ -1126,6 +1140,9 @@ void f_A2()
 		r.edx = (1 << 0) | (1 << 4) | (1 << 8);
 #if (ENABLE_FPU == 1)
 		r.edx |= (1 << 0);
+#endif
+#if (ENABLE_MMX == 1)
+		r.edx |= (1 << 23);
 #endif
 		break;
 	default:
@@ -1919,20 +1936,41 @@ void f_FF()
 }
 
 void (*instrs_0F[256])() = {
-	&f_00, &f_01, &f_02, &f_03, &f_04, &f_05, &f_06, &f_07, &f_08, &f_09, &f_0A, &f_0B, &f_0C, &f_0D, &f_0E, &f_0F, 
-	&f_10, &f_11, &f_12, &f_13, &f_14, &f_15, &f_16, &f_17, &f_18, &f_19, &f_1A, &f_1B, &f_1C, &f_1D, &f_1E, &f_1F, 
-	&f_20, &f_21, &f_22, &f_23, &f_24, &f_25, &f_26, &f_27, &f_28, &f_29, &f_2A, &f_2B, &f_2C, &f_2D, &f_2E, &f_2F, 
-	&f_30, &f_31, &f_32, &f_33, &f_34, &f_35, &f_36, &f_37, &f_38, &f_39, &f_3A, &f_3B, &f_3C, &f_3D, &f_3E, &f_3F, 
-	&f_40, &f_41, &f_42, &f_43, &f_44, &f_45, &f_46, &f_47, &f_48, &f_49, &f_4A, &f_4B, &f_4C, &f_4D, &f_4E, &f_4F, 
-	&f_50, &f_51, &f_52, &f_53, &f_54, &f_55, &f_56, &f_57, &f_58, &f_59, &f_5A, &f_5B, &f_5C, &f_5D, &f_5E, &f_5F, 
-	&f_60, &f_61, &f_62, &f_63, &f_64, &f_65, &f_66, &f_67, &f_68, &f_69, &f_6A, &f_6B, &f_6C, &f_6D, &f_6E, &f_6F, 
-	&f_70, &f_71, &f_72, &f_73, &f_74, &f_75, &f_76, &f_77, &f_78, &f_79, &f_7A, &f_7B, &f_7C, &f_7D, &f_7E, &f_7F, 
-	&f_80, &f_81, &f_82, &f_83, &f_84, &f_85, &f_86, &f_87, &f_88, &f_89, &f_8A, &f_8B, &f_8C, &f_8D, &f_8E, &f_8F, 
-	&f_90, &f_91, &f_92, &f_93, &f_94, &f_95, &f_96, &f_97, &f_98, &f_99, &f_9A, &f_9B, &f_9C, &f_9D, &f_9E, &f_9F, 
-	&f_A0, &f_A1, &f_A2, &f_A3, &f_A4, &f_A5, &f_A6, &f_A7, &f_A8, &f_A9, &f_AA, &f_AB, &f_AC, &f_AD, &f_AE, &f_AF, 
-	&f_B0, &f_B1, &f_B2, &f_B3, &f_B4, &f_B5, &f_B6, &f_B7, &f_B8, &f_B9, &f_BA, &f_BB, &f_BC, &f_BD, &f_BE, &f_BF, 
-	&f_C0, &f_C1, &f_C2, &f_C3, &f_C4, &f_C5, &f_C6, &f_C7, &f_C8, &f_C9, &f_CA, &f_CB, &f_CC, &f_CD, &f_CE, &f_CF, 
-	&f_D0, &f_D1, &f_D2, &f_D3, &f_D4, &f_D5, &f_D6, &f_D7, &f_D8, &f_D9, &f_DA, &f_DB, &f_DC, &f_DD, &f_DE, &f_DF, 
-	&f_E0, &f_E1, &f_E2, &f_E3, &f_E4, &f_E5, &f_E6, &f_E7, &f_E8, &f_E9, &f_EA, &f_EB, &f_EC, &f_ED, &f_EE, &f_EF, 
-	&f_F0, &f_F1, &f_F2, &f_F3, &f_F4, &f_F5, &f_F6, &f_F7, &f_F8, &f_F9, &f_FA, &f_FB, &f_FC, &f_FD, &f_FE, &f_FF
+	&f_00, &f_01, &f_02, &f_03, &f_04, &f_05, &f_06, &f_07, &f_08, &f_09, &f_0A, &f_0B, &f_0C, &f_0D, &f_0E, &f_0F,
+	&f_10, &f_11, &f_12, &f_13, &f_14, &f_15, &f_16, &f_17, &f_18, &f_19, &f_1A, &f_1B, &f_1C, &f_1D, &f_1E, &f_1F,
+	&f_20, &f_21, &f_22, &f_23, &f_24, &f_25, &f_26, &f_27, &f_28, &f_29, &f_2A, &f_2B, &f_2C, &f_2D, &f_2E, &f_2F,
+	&f_30, &f_31, &f_32, &f_33, &f_34, &f_35, &f_36, &f_37, &f_38, &f_39, &f_3A, &f_3B, &f_3C, &f_3D, &f_3E, &f_3F,
+	&f_40, &f_41, &f_42, &f_43, &f_44, &f_45, &f_46, &f_47, &f_48, &f_49, &f_4A, &f_4B, &f_4C, &f_4D, &f_4E, &f_4F,
+	&f_50, &f_51, &f_52, &f_53, &f_54, &f_55, &f_56, &f_57, &f_58, &f_59, &f_5A, &f_5B, &f_5C, &f_5D, &f_5E, &f_5F,
+#if (ENABLE_MMX == 1)
+	& f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_77,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+#else
+	& f_60, &f_61, &f_62, &f_63, &f_64, &f_65, &f_66, &f_67,
+	&f_68, &f_69, &f_6A, &f_6B, &f_6C, &f_6D, &f_6E, &f_6F,
+	&f_70, &f_71, &f_72, &f_73, &f_74, &f_75, &f_76, &f_77,
+	&f_78, &f_79, &f_7A, &f_7B, &f_7C, &f_7D, &f_7E, &f_7F,
+#endif
+	& f_80, &f_81, &f_82, &f_83, &f_84, &f_85, &f_86, &f_87, &f_88, &f_89, &f_8A, &f_8B, &f_8C, &f_8D, &f_8E, &f_8F,
+	&f_90, &f_91, &f_92, &f_93, &f_94, &f_95, &f_96, &f_97, &f_98, &f_99, &f_9A, &f_9B, &f_9C, &f_9D, &f_9E, &f_9F,
+	&f_A0, &f_A1, &f_A2, &f_A3, &f_A4, &f_A5, &f_A6, &f_A7, &f_A8, &f_A9, &f_AA, &f_AB, &f_AC, &f_AD, &f_AE, &f_AF,
+	&f_B0, &f_B1, &f_B2, &f_B3, &f_B4, &f_B5, &f_B6, &f_B7, &f_B8, &f_B9, &f_BA, &f_BB, &f_BC, &f_BD, &f_BE, &f_BF,
+	&f_C0, &f_C1, &f_C2, &f_C3, &f_C4, &f_C5, &f_C6, &f_C7, &f_C8, &f_C9, &f_CA, &f_CB, &f_CC, &f_CD, &f_CE, &f_CF,
+#if (ENABLE_MMX == 1)
+	& f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX,
+	&f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX, &f_MMX
+#else
+	& f_D0, &f_D1, &f_D2, &f_D3, &f_D4, &f_D5, &f_D6, &f_D7,
+	&f_D8, &f_D9, &f_DA, &f_DB, &f_DC, &f_DD, &f_DE, &f_DF,
+	&f_E0, &f_E1, &f_E2, &f_E3, &f_E4, &f_E5, &f_E6, &f_E7,
+	&f_E8, &f_E9, &f_EA, &f_EB, &f_EC, &f_ED, &f_EE, &f_EF,
+	&f_F0, &f_F1, &f_F2, &f_F3, &f_F4, &f_F5, &f_F6, &f_F7,
+	&f_F8, &f_F9, &f_FA, &f_FB, &f_FC, &f_FD, &f_FE, &f_FF
+#endif
 };

@@ -341,6 +341,10 @@ extern int irqs;
 extern int hlt;
 extern bool lock_prefix_active;
 
+#if (ENABLE_MMX == 1)
+extern bool in_mmx_mode;
+#endif
+
 extern int a20;
 extern unsigned int a20mask;
 

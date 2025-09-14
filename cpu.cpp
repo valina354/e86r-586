@@ -57,6 +57,10 @@ int irqs = 0;
 int hlt = 0;
 bool lock_prefix_active = false;
 
+#if (ENABLE_MMX == 1)
+bool in_mmx_mode = false;
+#endif
+
 int a20 = 1;
 unsigned int a20mask = 0xFFFFFFFFu;
 
@@ -221,6 +225,9 @@ void reset()
 
 #if (ENABLE_FPU == 1)
  	fpu_init();
+#endif
+#if (ENABLE_MMX == 1)
+	in_mmx_mode = false;
 #endif
 
 	gdt_base = 0;

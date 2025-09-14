@@ -54,4 +54,9 @@ void fpu_init();
 void fpu_op(unsigned char opcode);
 void fpu_wait();
 
+#if (ENABLE_MMX == 1)
+void fpu_enter_mmx_mode();
+void emms();
+#endif
+
 #endif // FPU_H
