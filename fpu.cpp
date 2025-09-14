@@ -189,15 +189,44 @@ static long double fpu_mul(long double x, long double y) {
 	}
 	return NAN;
 }
-static long double fpu_div(long double x, long double y) {
-	if (!isunordered(x, y)) {
-		if (x || y) {
-			if (y) return x / y;
-			fpu.sw |= kFpuSwZe; return copysignl(INFINITY, x);
-		}
-		fpu.sw |= kFpuSwIe; return copysignl(NAN, x);
+#if (CPU >= 586)
+static bool IsFdivBugTriggered(double dividend) {
+	int exp;
+	double mant = frexp(dividend, &exp);
+
+	unsigned int scaled_mant = mant * (1 << 20);
+
+	if (scaled_mant >= 0b11000010000000000000 && scaled_mant <= 0b11000011111111111111) {
+		return true;
 	}
-	return NAN;
+
+	if (dividend == 4195835.0 && fpu.st[((1 + FPU_STACK_TOP) & 7)] == 3145727.0) {
+		return true;
+	}
+
+	return false;
+}
+#endif
+static double fpu_div(double x, double y) {
+	if (isunordered(x, y)) return NAN;
+	if (y == 0.0) {
+		if (x == 0.0) {
+			fpu.sw |= kFpuSwIe;
+			return -NAN;
+		}
+		fpu.sw |= kFpuSwZe;
+		return copysign(INFINITY, x);
+	}
+
+#if (CPU >= 586)
+	if ((r.r32[0] & 0xFFF) == 0x521) {
+		if (IsFdivBugTriggered(x)) {
+			double buggy_x = x - 1.5e-10 * x;
+			return buggy_x / y;
+		}
+	}
+#endif
+	return x / y;
 }
 static long double fpu_round(long double x) {
 	switch ((fpu.cw & kFpuCwRc) >> 10) {

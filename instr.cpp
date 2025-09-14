@@ -5036,6 +5036,9 @@ void i_EF()
 void i_F0()
 {
 	D("lock ");
+#if (CPU >= 586)
+	lock_prefix_active = true;
+#endif
 	if (!fetch8(&opcode))
 		return;
 	instrs[opcode]();

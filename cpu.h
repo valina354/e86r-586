@@ -339,6 +339,7 @@ extern int terminated;
 extern int irqs;
 
 extern int hlt;
+extern bool lock_prefix_active;
 
 extern int a20;
 extern unsigned int a20mask;

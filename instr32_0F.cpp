@@ -1710,6 +1710,15 @@ void f32_C7()
 	if (!mod(0))
 		return;
 
+	if (lock_prefix_active && modrm_isreg) {
+		D("\n!!! F00F BUG TRIGGERED - CPU HALT !!!\n");
+		while (1) {
+#if (PC)
+			Sleep(100);
+#endif
+		}
+	}
+
 	if (((modrm >> 3) & 7) == 1)
 	{
 		D("cmpxchg8b ");

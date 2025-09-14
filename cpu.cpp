@@ -55,6 +55,7 @@ int dir4 = 4;
 int irqs = 0;
 
 int hlt = 0;
+bool lock_prefix_active = false;
 
 int a20 = 1;
 unsigned int a20mask = 0xFFFFFFFFu;
@@ -362,6 +363,10 @@ void step()
 	instrs[opcode]();
 
 	cyc++;
+
+#if (CPU >= 586)
+	lock_prefix_active = false;
+#endif
 
 	D("\n");
 
