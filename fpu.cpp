@@ -338,29 +338,29 @@ void fpu_op(unsigned char opcode) {
 	case DISP(1, 1, 6): fpu_set_mem_short(fpu.cw); break;
 	case DISP(1, 1, 7): fpu_set_mem_short(fpu.cw); break;
 	case DISP(1, 0, 0): fpu_push(ST_RM()); break;
-	case DISP(1, 0, 1): { long double t = ST_RM(); SET_ST_RM(ST0()); SET_ST0(t); } break;
+	case DISP(1, 0, 1): { double t = ST_RM(); SET_ST_RM(ST0()); SET_ST0(t); } break;
 	case DISP(1, 0, 2): break;
 	case DISP(1, 0, 3): SET_ST_RM_POP(ST0()); break;
 	case DISP(1, 0, 5):
 		switch (modrm & 7) {
-		case 0: fpu_push(1.0L); break;
-		case 1: fpu_push(log10(2.0L)); break;
+		case 0: fpu_push(1.0); break;
+		case 1: fpu_push(log10(2.0)); break;
 		case 2: fpu_push(log2(M_E)); break;
 		case 3: fpu_push(M_PI); break;
-		case 4: fpu_push(log2(10.0L)); break;
+		case 4: fpu_push(log2(10.0)); break;
 		case 5: fpu_push(M_LN2); break;
-		case 6: fpu_push(0.0L); break;
+		case 6: fpu_push(0.0); break;
 		} break;
 	case DISP(1, 0, 4):
 		switch (modrm & 7) {
 		case 0: SET_ST0(-ST0()); break;
-		case 1: SET_ST0(fabsl(ST0())); break;
+		case 1: SET_ST0(fabs(ST0())); break;
 		case 4: fpu_compare(0); break;
 		case 5:
 			fpu.sw &= ~(kFpuSwC0 | kFpuSwC1 | kFpuSwC2 | kFpuSwC3);
-			if (signbit((double)ST0())) fpu.sw |= kFpuSwC1;
+			if (signbit(ST0())) fpu.sw |= kFpuSwC1;
 			if (fpu_get_tag(0) == kFpuTagEmpty) fpu.sw |= kFpuSwC0 | kFpuSwC3;
-			else switch (fpclassify((double)ST0())) {
+			else switch (fpclassify(ST0())) {
 			case FP_NAN: fpu.sw |= kFpuSwC0; break;
 			case FP_INFINITE: fpu.sw |= kFpuSwC0 | kFpuSwC2; break;
 			case FP_ZERO: fpu.sw |= kFpuSwC3; break;
@@ -372,13 +372,9 @@ void fpu_op(unsigned char opcode) {
 		switch (modrm & 7) {
 		case 0: SET_ST0(exp2(ST0()) - 1); break;
 		case 1: SET_ST_POP(1, ST1() * log2(ST0())); break;
-		case 2:
-			fpu_clear_oor();
-			SET_ST0((long double)tan((double)ST0()));
-			fpu_push(1);
-			break;
-		case 3: fpu_clear_roundup(); SET_ST_POP(1, atan2l(ST1(), ST0())); break;
-		case 4: { long double x = ST0(); SET_ST0(logb(x)); fpu_push(ldexpl(x, -ilogbl(x))); } break;
+		case 2: fpu_clear_oor(); SET_ST0(tan(ST0())); fpu_push(1); break;
+		case 3: fpu_clear_roundup(); SET_ST_POP(1, atan2(ST1(), ST0())); break;
+		case 4: { double x = ST0(); SET_ST0(logb(x)); fpu_push(ldexp(x, -ilogb(x))); } break;
 		case 5: SET_ST0(fpu_fprem1(ST0(), ST1(), &fpu.sw)); break;
 		case 6: fpu.sw = (fpu.sw & ~kFpuSwSp) | ((fpu.sw - (1 << 11)) & kFpuSwSp); break;
 		case 7: fpu.sw = (fpu.sw & ~kFpuSwSp) | ((fpu.sw + (1 << 11)) & kFpuSwSp); break;
@@ -387,19 +383,19 @@ void fpu_op(unsigned char opcode) {
 		switch (modrm & 7) {
 		case 0: SET_ST0(fpu_fprem(ST0(), ST1(), &fpu.sw)); break;
 		case 1: SET_ST_POP(1, ST1() * log2(ST0() + 1)); break;
-		case 2: fpu_clear_roundup(); SET_ST0(sqrtl(ST0())); break;
-		case 3: { long double s = sinl(ST0()), c = cosl(ST0()); SET_ST0(s); fpu_push(c); } break;
+		case 2: fpu_clear_roundup(); SET_ST0(sqrt(ST0())); break;
+		case 3: { double s = sin(ST0()), c = cos(ST0()); SET_ST0(s); fpu_push(c); } break;
 		case 4: SET_ST0(fpu_round(ST0())); break;
-		case 5: fpu_clear_roundup(); SET_ST0(ldexpl(ST0(), ST1())); break;
-		case 6:
-			fpu_clear_oor();
-			SET_ST0((long double)sin((double)ST0()));
-			break;
-		case 7:
-			fpu_clear_oor();
-			SET_ST0((long double)cos((double)ST0()));
-			break;
+		case 5: fpu_clear_roundup(); SET_ST0(ldexp(ST0(), ST1())); break;
+		case 6: fpu_clear_oor(); SET_ST0(sin(ST0())); break;
+		case 7: fpu_clear_oor(); SET_ST0(cos(ST0())); break;
 		} break;
+#if (CPU >= 686)
+	case DISP(2, 0, 0): if (r.eflags & F_C) SET_ST0(ST_RM()); break;
+	case DISP(2, 0, 1): if (r.eflags & F_Z) SET_ST0(ST_RM()); break;
+	case DISP(2, 0, 2): if (r.eflags & (F_C | F_Z)) SET_ST0(ST_RM()); break;
+	case DISP(2, 0, 3): if (r.eflags & F_P) SET_ST0(ST_RM()); break;
+#endif
 	case DISP(2, 1, 0): SET_ST0(fpu_add(ST0(), fpu_get_mem_int())); break;
 	case DISP(2, 1, 1): SET_ST0(fpu_mul(ST0(), fpu_get_mem_int())); break;
 	case DISP(2, 1, 2): fpu_compare(fpu_get_mem_int()); break;
@@ -408,6 +404,13 @@ void fpu_op(unsigned char opcode) {
 	case DISP(2, 1, 5): SET_ST0(fpu_sub(fpu_get_mem_int(), ST0())); break;
 	case DISP(2, 1, 6): SET_ST0(fpu_div(ST0(), fpu_get_mem_int())); break;
 	case DISP(2, 1, 7): SET_ST0(fpu_div(fpu_get_mem_int(), ST0())); break;
+#if (CPU >= 686)
+	case DISP(3, 0, 0): if (!(r.eflags & F_C)) SET_ST0(ST_RM()); break;
+	case DISP(3, 0, 1): if (!(r.eflags & F_Z)) SET_ST0(ST_RM()); break;
+	case DISP(3, 0, 2): if (!(r.eflags & (F_C | F_Z))) SET_ST0(ST_RM()); break;
+	case DISP(3, 0, 3): if (!(r.eflags & F_P)) SET_ST0(ST_RM()); break;
+	case DISP(3, 0, 5): case DISP(3, 0, 6): { double x = ST0(), y = ST_RM(); r.eflags &= ~(F_Z | F_P | F_C); if (isunordered(x, y)) { r.eflags |= (F_Z | F_P | F_C); } else { if (x < y) r.eflags |= F_C; if (x == y) r.eflags |= F_Z; } } break;
+#endif
 	case DISP(3, 1, 0): fpu_push(fpu_get_mem_int()); break;
 	case DISP(3, 1, 1): fpu_set_mem_int(trunc(fpu_pop())); break;
 	case DISP(3, 1, 2):
@@ -418,10 +421,7 @@ void fpu_op(unsigned char opcode) {
 		break;
 	case DISP(3, 1, 3):
 #if (CPU >= 686)
-		if (handle_fist_bug(ST0(), 32)) {
-			fpu_pop();
-			break;
-		}
+		if (handle_fist_bug(ST0(), 32)) { fpu_pop(); break; }
 #endif
 		fpu_set_mem_int(fpu_round(fpu_pop()));
 		break;
@@ -479,16 +479,18 @@ void fpu_op(unsigned char opcode) {
 		break;
 	case DISP(7, 1, 3):
 #if (CPU >= 686)
-		if (handle_fist_bug(ST0(), 16)) {
-			fpu_pop();
-			break;
-		}
+		if (handle_fist_bug(ST0(), 16)) { fpu_pop(); break; }
 #endif
 		fpu_set_mem_short(fpu_round(fpu_pop()));
 		break;
 	case DISP(7, 1, 5): fpu_push(fpu_get_mem_long()); break;
 	case DISP(7, 1, 7): fpu_set_mem_long(fpu_round(fpu_pop())); break;
-	case DISP(7, 0, 4): r.ax &= 0xFF00; r.ax |= fpu.sw & 0xFF; break;
+	case DISP(7, 0, 4):
+		r.ax = fpu.sw;
+		break;
+#if (CPU >= 686)
+	case DISP(5, 0, 6): case DISP(5, 0, 7): { double x = ST0(), y = ST_RM(); r.eflags &= ~(F_Z | F_P | F_C); if (isunordered(x, y)) { r.eflags |= (F_Z | F_P | F_C); } else { if (x < y) r.eflags |= F_C; if (x == y) r.eflags |= F_Z; } fpu_pop(); } break;
+#endif
 	default: fpu_undefined(); break;
 	}
 }

@@ -44,6 +44,28 @@ void ex1(int c, int e)
 	ex(c, e);
 }
 
+#if (CPU >= 686)
+void check_hardware_breakpoints(unsigned int linear_addr, int size, int type)
+{
+	if ((dr[7] & 0xFF) == 0) {
+		return;
+	}
+
+	for (int i = 0; i < 4; ++i) {
+		if (dr[7] & (1 << (i * 2))) {
+			if (dr[i] >= linear_addr && dr[i] < (linear_addr + size)) {
+				int condition = (dr[7] >> (16 + i * 4)) & 3;
+				if (condition == type) {
+					dr[6] |= (1 << i);
+					interrupt(EX_DEBUG, -1, INT_FLAGS_FAULT);
+					return;
+				}
+			}
+		}
+	}
+}
+#endif
+
 int get_phys_addr(unsigned int addr, unsigned int *phys)
 {
 	unsigned int user;
@@ -57,6 +79,13 @@ int get_phys_addr(unsigned int addr, unsigned int *phys)
 			ex1(EX_PAGE, (user ? 4 : 0));
 			return 0;
 		}
+#if (CPU >= 686)
+		if ((cr[4] & CR4_PSE) && (e & 0x80)) {
+			*phys = (e & 0xFFC00000) | (addr & 0x003FFFFF);
+			dir[addr >> 22u] |= 32;
+			return 1;
+		}
+#endif
 		/*
 		if ((!(e & 4)) && user)
 		{
@@ -114,6 +143,13 @@ int get_phys_addr_write(unsigned int addr, unsigned int *phys)
 				return 0;
 			}
 		}
+#if (CPU >= 686)
+		if ((cr[4] & CR4_PSE) && (e & 0x80)) {
+			*phys = (e & 0xFFC00000) | (addr & 0x003FFFFF);
+			dir[addr >> 22u] |= (32 | 64);
+			return 1;
+		}
+#endif
 		/*
 		if ((!(e & 4)) && user)
 		{
@@ -634,6 +670,9 @@ int read8(selector_t *s, unsigned int addr, unsigned char *v)
 		*v = 0xff;
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 1, 3);
+#endif
 	return read8(s->base + addr, v);
 }
 
@@ -653,6 +692,9 @@ int read16(selector_t *s, unsigned int addr, unsigned short *v)
 		*v = 0xffffu;
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 2, 3);
+#endif
 	return read16(s->base + addr, v);
 }
 
@@ -672,6 +714,9 @@ int read32(selector_t *s, unsigned int addr, unsigned int *v)
 		*v = 0xffffffffu;
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 4, 3);
+#endif
 	return read32(s->base + addr, v);
 }
 
@@ -686,6 +731,9 @@ int write8(selector_t *s, unsigned int addr, unsigned char v)
 		}
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 1, 1);
+#endif
 	return write8(s->base + addr, v);
 }
 
@@ -704,6 +752,9 @@ int write16(selector_t *s, unsigned int addr, unsigned short v)
 		}
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 2, 1);
+#endif
 	return write16(s->base + addr, v);
 }
 
@@ -722,6 +773,9 @@ int write32(selector_t *s, unsigned int addr, unsigned int v)
 		}
 		return 1;
 	}
+#if (CPU >= 686)
+	check_hardware_breakpoints(s->base + addr, 4, 1);
+#endif
 	return write32(s->base + addr, v);
 }
 
@@ -1016,11 +1070,17 @@ int fetch8(unsigned char *b)
 	int res;
 	if (cs.big)
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.eip, 1, 0);
+#endif
 		res = read8fast(cs.base + r.eip, b);
 		r.eip += 1;
 	}
 	else
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.ip, 1, 0);
+#endif
 		res = read8(&cs, r.ip, b);
 		r.ip += 1;
 	}
@@ -1046,11 +1106,17 @@ int fetch16(unsigned short *b)
 	int res;
 	if (cs.big)
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.eip, 2, 0);
+#endif
 		res = read16fast(cs.base + r.eip, b);
 		r.eip += 2;
 	}
 	else
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.ip, 2, 0);
+#endif
 		res = read16(&cs, r.ip, b);
 		r.ip += 2;
 	}
@@ -1076,11 +1142,17 @@ int fetch32(unsigned int *b)
 	int res;
 	if (cs.big)
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.eip, 4, 0);
+#endif
 		res = read32fast(cs.base + r.eip, b);
 		r.eip += 4;
 	}
 	else
 	{
+#if (CPU >= 686)
+		check_hardware_breakpoints(cs.base + r.ip, 4, 0);
+#endif
 		res = read32(&cs, r.ip, b);
 		r.ip += 4;
 	}

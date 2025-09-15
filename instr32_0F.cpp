@@ -561,12 +561,45 @@ void f32_33()
 
 void f32_34()
 {
+#if (CPU >= 686)
+	if ((msr_registers[0x174] & 0xFFFC) == 0) {
+		ex(EX_GP, 0);
+		return;
+	}
+	D("sysenter");
+	unsigned long long cs_msr = msr_registers[0x174];
+	unsigned long long eip_msr = msr_registers[0x176];
+	unsigned long long esp_msr = msr_registers[0x175];
+
+	set_selector(&cs, (unsigned short)cs_msr, 1);
+	cpl = 0;
+	set_selector(&ss, (unsigned short)cs_msr + 8, 1);
+	r.eip = (unsigned int)eip_msr;
+	r.esp = (unsigned int)esp_msr;
+#else
 	undefined32(0x34);
+#endif
 }
 
 void f32_35()
 {
+#if (CPU >= 686)
+	if (cpl != 0) {
+		ex(EX_GP, 0);
+		return;
+	}
+	D("sysexit");
+	unsigned long long cs_msr = msr_registers[0x174];
+	unsigned long long eip_msr = msr_registers[0x176];
+
+	set_selector(&cs, (unsigned short)cs_msr + 16, 1);
+	cpl = 3;
+	set_selector(&ss, (unsigned short)cs_msr + 24, 1);
+	r.eip = r.edx;
+	r.esp = r.ecx;
+#else
 	undefined32(0x35);
+#endif
 }
 
 void f32_36()
@@ -1248,10 +1281,10 @@ void f32_A2()
 		break;
 	case 1:
 #if (CPU >= 686)
-		r.eax = 0x619;
+		r.eax = 0x633;
 		r.ebx = 0;
 		r.ecx = 0;
-		r.edx = (1 << 4) | (1 << 8) | (1 << 15);
+		r.edx = (1 << 2) | (1 << 3) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 15);
 #elif (CPU >= 586)
 		r.eax = 0x521;
 		r.ebx = 0;

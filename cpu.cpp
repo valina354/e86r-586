@@ -375,6 +375,12 @@ void step()
 	lock_prefix_active = false;
 #endif
 
+#if (CPU >= 686)
+	if (r.eflags & F_T) {
+		interrupt(EX_DEBUG, -1, INT_FLAGS_FAULT);
+	}
+#endif
+
 	D("\n");
 
 	D("  ax: %.8X\n", r.eax);
