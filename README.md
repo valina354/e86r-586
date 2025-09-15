@@ -1,5 +1,5 @@
 # e86r
-Software 80486 IBM PC emulator for Windows and STM32 microcontrollers.
+Software 686 IBM PC emulator for Windows.
 
 ### Tested software
 * MSDOS 3.3 / 4.0 / 6.22
@@ -114,7 +114,6 @@ Change BIOS file name to bios_fdd.bin or tell your BIOS to boot from floppy:
 * V86 mode work incorrectly so Windows 95 will fail to start.
 * Protected mode emulation is incomplete. EMM386, Windows 3.1, Windows 95, Linux and some pmode games will crash.
 * VGA virtual resolution (panning) calculation may be wrong for some games.
-* No FPU emulation. If you need Linux please compile it with a soft emulation of FPU.
 * FreeDOS runs slower than MS-DOS, and Windows cannot use its himem.sys for some reason.
 
 ### Disclaimer
